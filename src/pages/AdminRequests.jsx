@@ -2,23 +2,24 @@ import { useState, useEffect } from "react";
 import AdminLayout from "../layouts/AdminLayout";
 import partnerApi from "../api/partnerApi";
 import parkingLotApi from "../api/parkingLotApi";
+import Modal from "../components/Modal";
+import AddPartnerModal from "../components/AddPartnerModal";
 
 export default function AdminRequests() {
-  const [activeTab, setActiveTab] = useState("partner"); // partner | parkingLot
+  const [activeTab, setActiveTab] = useState("partner");
   const [requests, setRequests] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+  const [showAddPartner, setShowAddPartner] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         let res;
         if (activeTab === "partner") {
-          res = await partnerApi.getRequests(); // API cho partner requests
+          res = await partnerApi.getRequests();
         } else {
-          res = await parkingLotApi.getRequests(); // API cho parking lot requests
+          res = await parkingLotApi.getRequests();
         }
         setRequests(res.data || []);
       } catch (err) {
@@ -28,7 +29,6 @@ export default function AdminRequests() {
     fetchData();
   }, [activeTab]);
 
-  // Filter
   const filtered = requests.filter((r) => {
     const matchSearch =
       r.partnerName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -36,15 +36,6 @@ export default function AdminRequests() {
     const matchStatus = status ? r.status === status : true;
     return matchSearch && matchStatus;
   });
-
-  // Pagination
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = filtered.slice(startIndex, startIndex + pageSize);
-
-  const handlePageChange = (page) => {
-    if (page > 0 && page <= totalPages) setCurrentPage(page);
-  };
 
   return (
     <AdminLayout>
@@ -72,11 +63,29 @@ export default function AdminRequests() {
         </button>
       </div>
 
+      {/* Partner Tab Header */}
+      {activeTab === "partner" && (
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 className="text-2xl font-bold">Partner Account Requests</h2>
+            <p className="text-gray-500 text-sm">
+              Review and manage partner account registration requests
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAddPartner(true)}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+          >
+            + New Partner
+          </button>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center mb-4">
         <input
           type="text"
-          placeholder="Search by Partner or Email..."
+          placeholder="Search by Partner Name or Email..."
           className="border px-3 py-2 rounded-md w-64"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -91,10 +100,7 @@ export default function AdminRequests() {
           <option value="Approved">Approved</option>
           <option value="Rejected">Rejected</option>
         </select>
-        <input
-          type="date"
-          className="border px-3 py-2 rounded-md"
-        />
+        <input type="date" className="border px-3 py-2 rounded-md" />
         <select className="border px-3 py-2 rounded-md">
           <option>Sort by Date</option>
         </select>
@@ -129,8 +135,8 @@ export default function AdminRequests() {
             </tr>
           </thead>
           <tbody>
-            {paginatedData.length > 0 ? (
-              paginatedData.map((r, idx) => (
+            {filtered.length > 0 ? (
+              filtered.map((r, idx) => (
                 <tr key={idx} className="border-t hover:bg-gray-50 transition">
                   {activeTab === "partner" ? (
                     <>
@@ -141,28 +147,14 @@ export default function AdminRequests() {
                       <td className="px-4 py-2">
                         {new Date(r.submittedAt).toLocaleDateString("en-GB")}
                       </td>
-                      <td
-                        className={`px-4 py-2 font-semibold ${
-                          r.status === "Pending"
-                            ? "text-yellow-600"
-                            : r.status === "Approved"
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {r.status}
-                      </td>
+                      <td className="px-4 py-2">{r.status}</td>
                       <td className="px-4 py-2 flex gap-2">
-                        {r.status === "Pending" && (
-                          <>
-                            <button className="text-green-600 hover:underline">
-                              Approve
-                            </button>
-                            <button className="text-red-600 hover:underline">
-                              Reject
-                            </button>
-                          </>
-                        )}
+                        <button className="text-green-600 hover:underline">
+                          Approve
+                        </button>
+                        <button className="text-red-600 hover:underline">
+                          Reject
+                        </button>
                         <button className="text-indigo-600 hover:underline">
                           View
                         </button>
@@ -177,28 +169,14 @@ export default function AdminRequests() {
                       <td className="px-4 py-2">
                         {new Date(r.submittedAt).toLocaleDateString("en-GB")}
                       </td>
-                      <td
-                        className={`px-4 py-2 font-semibold ${
-                          r.status === "Pending"
-                            ? "text-yellow-600"
-                            : r.status === "Approved"
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {r.status}
-                      </td>
+                      <td className="px-4 py-2">{r.status}</td>
                       <td className="px-4 py-2 flex gap-2">
-                        {r.status === "Pending" && (
-                          <>
-                            <button className="text-green-600 hover:underline">
-                              Approve
-                            </button>
-                            <button className="text-red-600 hover:underline">
-                              Reject
-                            </button>
-                          </>
-                        )}
+                        <button className="text-green-600 hover:underline">
+                          Approve
+                        </button>
+                        <button className="text-red-600 hover:underline">
+                          Reject
+                        </button>
                         <button className="text-indigo-600 hover:underline">
                           View
                         </button>
@@ -210,7 +188,7 @@ export default function AdminRequests() {
             ) : (
               <tr>
                 <td
-                  colSpan={activeTab === "partner" ? 7 : 7}
+                  colSpan="7"
                   className="px-4 py-4 text-center text-gray-500"
                 >
                   No requests found.
@@ -221,38 +199,10 @@ export default function AdminRequests() {
         </table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-end items-center gap-2 mt-4">
-          <button
-            className="px-3 py-1 border rounded-md hover:bg-gray-100 disabled:opacity-50"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            Prev
-          </button>
-          {[...Array(totalPages)].map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => handlePageChange(idx + 1)}
-              className={`px-3 py-1 border rounded-md ${
-                currentPage === idx + 1
-                  ? "bg-indigo-600 text-white"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              {idx + 1}
-            </button>
-          ))}
-          <button
-            className="px-3 py-1 border rounded-md hover:bg-gray-100 disabled:opacity-50"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
-        </div>
-      )}
+      {/* Add Partner Modal */}
+      <Modal isOpen={showAddPartner} onClose={() => setShowAddPartner(false)}>
+        <AddPartnerModal onClose={() => setShowAddPartner(false)} />
+      </Modal>
     </AdminLayout>
   );
 }
