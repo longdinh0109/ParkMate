@@ -1,12 +1,16 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import authApi from "../api/authApi"; // ✅ import API login
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState("");
 
-  const handleSubmit = (e) => {
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     let newErrors = {};
@@ -16,7 +20,20 @@ export default function Login() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      console.log("✅ Form hợp lệ, gọi API login ở đây...");
+      try {
+        const res = await authApi.login({ email, password });
+        console.log("✅ Login success:", res.data);
+
+        // Lưu token (tuỳ backend trả về accessToken hay token)
+        localStorage.setItem("accessToken", res.data.accessToken);
+        localStorage.setItem("refreshToken", res.data.refreshToken);
+
+        alert("Login successful!");
+        navigate("/partner-home"); // 👉 đổi path tuỳ trang sau login
+      } catch (err) {
+        console.error("❌ Login failed:", err);
+        setApiError("Invalid email or password");
+      }
     }
   };
 
@@ -32,6 +49,7 @@ export default function Login() {
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
+          {/* Email */}
           <div>
             <input
               type="email"
@@ -39,7 +57,9 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email address"
               className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                errors.email ? "border-red-500 focus:ring-red-400" : "focus:ring-indigo-400"
+                errors.email
+                  ? "border-red-500 focus:ring-red-400"
+                  : "focus:ring-indigo-400"
               }`}
             />
             {errors.email && (
@@ -47,6 +67,7 @@ export default function Login() {
             )}
           </div>
 
+          {/* Password */}
           <div>
             <input
               type="password"
@@ -54,7 +75,9 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
               className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                errors.password ? "border-red-500 focus:ring-red-400" : "focus:ring-indigo-400"
+                errors.password
+                  ? "border-red-500 focus:ring-red-400"
+                  : "focus:ring-indigo-400"
               }`}
             />
             {errors.password && (
@@ -62,6 +85,7 @@ export default function Login() {
             )}
           </div>
 
+          {/* Remember + Forgot */}
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center">
               <input type="checkbox" className="mr-2" /> Remember me
@@ -71,6 +95,10 @@ export default function Login() {
             </a>
           </div>
 
+          {/* API error */}
+          {apiError && <p className="text-red-500 text-sm">{apiError}</p>}
+
+          {/* Submit button */}
           <button
             type="submit"
             className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700"

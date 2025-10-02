@@ -5,85 +5,95 @@ import partnerApi from "../api/partnerApi";
 export default function Register() {
   const [form, setForm] = useState({
     companyName: "",
-    companyEmail: "",
     password: "",
     confirmPassword: "",
     taxNumber: "",
     businessLicenseNumber: "",
+    businessLicenseFile: null, // file upload
     companyPhone: "",
     companyAddress: "",
+    companyEmail: "",
     businessDescription: "",
     contactPersonName: "",
     contactPersonPhone: "",
     contactPersonEmail: "",
   });
 
-  const [file, setFile] = useState(null);
-  const [filePreview, setFilePreview] = useState(null);
   const [errors, setErrors] = useState({});
+  const [preview, setPreview] = useState(null);
 
-  // --- handle input change
+  // Handle input change
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  // --- handle file upload + preview
-  const handleFileChange = (e) => {
-    const uploadedFile = e.target.files[0];
-    if (uploadedFile) {
-      setFile(uploadedFile);
-      setFilePreview(URL.createObjectURL(uploadedFile));
+    const { name, value, files } = e.target;
+    if (files) {
+      setForm({ ...form, [name]: files[0] });
+      setPreview(URL.createObjectURL(files[0]));
+    } else {
+      setForm({ ...form, [name]: value });
     }
   };
 
-  // --- validate form
-  const validate = () => {
+  // Validate form
+  const validateForm = () => {
     let newErrors = {};
     if (!form.companyName) newErrors.companyName = "Company name is required";
-    if (!form.companyEmail) newErrors.companyEmail = "Company email is required";
+    if (!form.companyEmail) newErrors.companyEmail = "Email is required";
     if (!form.password) newErrors.password = "Password is required";
     if (form.password !== form.confirmPassword)
       newErrors.confirmPassword = "Passwords do not match";
     if (!form.taxNumber) newErrors.taxNumber = "Tax number is required";
     if (!form.businessLicenseNumber)
-      newErrors.businessLicenseNumber = "Business license number is required";
-    if (!form.companyPhone) newErrors.companyPhone = "Phone number is required";
-    if (!form.companyAddress) newErrors.companyAddress = "Address is required";
+      newErrors.businessLicenseNumber = "Business License Number is required";
+    if (!form.businessLicenseFile)
+      newErrors.businessLicenseFile = "Business License File is required";
+    if (!form.companyPhone) newErrors.companyPhone = "Company phone is required";
+    if (!form.companyAddress)
+      newErrors.companyAddress = "Company address is required";
     if (!form.businessDescription)
-      newErrors.businessDescription = "Description is required";
+      newErrors.businessDescription = "Business description is required";
     if (!form.contactPersonName)
       newErrors.contactPersonName = "Contact person name is required";
     if (!form.contactPersonPhone)
       newErrors.contactPersonPhone = "Contact person phone is required";
     if (!form.contactPersonEmail)
       newErrors.contactPersonEmail = "Contact person email is required";
-    if (!file) newErrors.file = "Business license file is required";
 
-    return newErrors;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  // --- submit
+  // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const newErrors = validate();
-    setErrors(newErrors);
+    if (!validateForm()) return;
 
-    if (Object.keys(newErrors).length === 0) {
-      try {
-        // chuẩn bị formData gửi API
-        const formData = new FormData();
-        Object.keys(form).forEach((key) => {
-          formData.append(key, form[key]);
-        });
-        formData.append("businessLicenseFile", file);
+    // 👇 Giả sử upload file xong sẽ trả về URL
+    const businessLicenseFileUrl = preview || "";
 
-        await partnerApi.register(formData);
+    const payload = {
+      companyName: form.companyName,
+      password: form.password,
+      taxNumber: form.taxNumber,
+      businessLicenseNumber: form.businessLicenseNumber,
+      businessLicenseFileUrl, // mock URL
+      companyPhone: form.companyPhone,
+      companyAddress: form.companyAddress,
+      companyEmail: form.companyEmail,
+      businessDescription: form.businessDescription,
+      contactPersonName: form.contactPersonName,
+      contactPersonPhone: form.contactPersonPhone,
+      contactPersonEmail: form.contactPersonEmail,
+    };
 
-        alert("Register success!");
-      } catch (err) {
-        console.error("Register failed", err);
-        alert("Register failed!");
-      }
+    console.log("📤 Payload gửi API:", payload);
+
+    try {
+      const res = await partnerApi.registerPartner(payload);
+      alert("✅ Register success!");
+      console.log("Response:", res.data);
+    } catch (error) {
+      console.error("❌ Register failed:", error);
+      alert("Register failed!");
     }
   };
 
@@ -101,146 +111,153 @@ export default function Register() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+          {/* Company Name */}
           <input
             type="text"
             name="companyName"
+            placeholder="Company Name"
             value={form.companyName}
             onChange={handleChange}
-            placeholder="Company Name"
             className="col-span-2 border px-4 py-2 rounded-md"
           />
           {errors.companyName && (
-            <p className="col-span-2 text-red-500 text-sm">{errors.companyName}</p>
+            <p className="text-red-500 text-sm col-span-2">{errors.companyName}</p>
           )}
 
+          {/* Email + Password */}
           <input
             type="email"
             name="companyEmail"
+            placeholder="Company Email"
             value={form.companyEmail}
             onChange={handleChange}
-            placeholder="Company Email"
             className="border px-4 py-2 rounded-md"
           />
-          <input
+           <input
             type="text"
             name="taxNumber"
+            placeholder="Tax Number"
             value={form.taxNumber}
             onChange={handleChange}
-            placeholder="Tax Number"
             className="border px-4 py-2 rounded-md"
           />
           <input
             type="password"
             name="password"
+            placeholder="Password"
             value={form.password}
             onChange={handleChange}
-            placeholder="Password"
-            className="border px-4 py-2 rounded-md"
-          />
-          <input
-            type="password"
-            name="confirmPassword"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            placeholder="Confirm Password"
-            className="border px-4 py-2 rounded-md"
-          />
-          
-          <input
-            type="text"
-            name="businessLicenseNumber"
-            value={form.businessLicenseNumber}
-            onChange={handleChange}
-            placeholder="Business License Number"
             className="border px-4 py-2 rounded-md"
           />
 
+          {/* Confirm Password + Tax */}
+          <input
+            type="password"
+            name="confirmPassword"
+            placeholder="Confirm Password"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            className="border px-4 py-2 rounded-md"
+          />
+         
+
+          {/* Business License Number */}
+          <input
+            type="text"
+            name="businessLicenseNumber"
+            placeholder="Business License Number"
+            value={form.businessLicenseNumber}
+            onChange={handleChange}
+            className="col-span-2 border px-4 py-2 rounded-md"
+          />
+
+          {/* Phone + Address */}
           <input
             type="text"
             name="companyPhone"
+            placeholder="Company Phone"
             value={form.companyPhone}
             onChange={handleChange}
-            placeholder="Company Phone"
             className="border px-4 py-2 rounded-md"
           />
           <input
             type="text"
             name="companyAddress"
+            placeholder="Company Address"
             value={form.companyAddress}
             onChange={handleChange}
-            placeholder="Company Address"
             className="border px-4 py-2 rounded-md"
           />
 
+          {/* Business Description */}
           <textarea
             name="businessDescription"
+            placeholder="Business Description"
             value={form.businessDescription}
             onChange={handleChange}
-            placeholder="Business Description"
             className="col-span-2 border px-4 py-2 rounded-md"
           />
 
+          {/* Contact Person */}
           <input
             type="text"
             name="contactPersonName"
+            placeholder="Contact Person Name"
             value={form.contactPersonName}
             onChange={handleChange}
-            placeholder="Contact Person Name"
             className="border px-4 py-2 rounded-md"
           />
           <input
             type="text"
             name="contactPersonPhone"
+            placeholder="Contact Person Phone"
             value={form.contactPersonPhone}
             onChange={handleChange}
-            placeholder="Contact Person Phone"
             className="border px-4 py-2 rounded-md"
           />
           <input
             type="email"
             name="contactPersonEmail"
+            placeholder="Contact Person Email"
             value={form.contactPersonEmail}
             onChange={handleChange}
-            placeholder="Contact Person Email"
             className="col-span-2 border px-4 py-2 rounded-md"
           />
 
-          {/* Upload file dưới cùng */}
-          <div className="col-span-2 mt-4">
-            <label className="block text-sm font-medium mb-2">Business License File *</label>
+          {/* Business License File */}
+          <div className="col-span-2">
+            <label className="block mb-1 font-medium text-sm">
+              Business License File
+            </label>
             <input
               type="file"
-              accept="image/*,.pdf"
-              onChange={handleFileChange}
+              name="businessLicenseFile"
+              onChange={handleChange}
               className="w-full border px-4 py-2 rounded-md"
             />
-            {errors.file && <p className="text-red-500 text-sm">{errors.file}</p>}
-            {filePreview && (
-              <div className="mt-3">
-                <p className="text-sm text-gray-500">Preview:</p>
-                <img
-                  src={filePreview}
-                  alt="preview"
-                  className="h-40 object-contain border rounded-md mt-2"
-                />
-              </div>
+            {preview && (
+              <img
+                src={preview}
+                alt="Preview"
+                className="mt-3 h-32 object-contain border rounded-md"
+              />
             )}
           </div>
 
           {/* Buttons */}
-          <div className="col-span-2 flex justify-between mt-6">
-            <button
-              type="submit"
-              className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
-            >
-              Register
-            </button>
+          <div className="col-span-2 flex justify-between mt-4">
             <Link
               to="/login"
               className="px-6 py-2 border rounded-md hover:bg-gray-100"
             >
               Cancel
             </Link>
+            <button
+              type="submit"
+              className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
+            >
+              Register
+            </button>
           </div>
         </form>
       </div>

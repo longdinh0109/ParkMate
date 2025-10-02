@@ -1,9 +1,7 @@
 import axiosClient from "./axiosClient";
 
 const authApi = {
-  login: (data) => axiosClient.post("/auth/login", data),
-  register: (data) => axiosClient.post("/auth/register", data),
-  resendEmail: (email) => axiosClient.post("/auth/resend-confirm", { email }),
+  login: (data) => axiosClient.post("/v1/user-service/auth/login", data),
 };
 
 export default authApi;
